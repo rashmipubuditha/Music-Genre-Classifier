@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Music Genre Classifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+      /* ── Reset ──────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* ── Design tokens — Dark Navy + Gold ───────────────────── */
+      :root {
+        --navy-900: #060c1f;
+        --navy-800: #0b1333;
+        --navy-700: #111d4a;
+        --navy-600: #1a2a5e;
+        --navy-500: #263b7a;
+        --navy-400: #3a4f94;
+        --gold: #facc15;
+        --gold-light: #fef08a;
+        --gold-dim: #ca8a04;
+        --gold-bg: rgba(250, 204, 21, 0.08);
+        --text: #e8ecf4;
+        --text-muted: #8b95b0;
+        --text-faint: #5a6380;
+        --surface: #0e1529;
+        --surface-2: #121c38;
+        --border: #1e2b52;
+        --border-hi: #2a3d6e;
+        --danger: #f87171;
+        --danger-bg: rgba(248, 113, 113, 0.08);
+        --radius-lg: 14px;
+        --radius-md: 10px;
+      }
+
+      /* ── Base ───────────────────────────────────────────────── */
+      body {
+        font-family: "Inter", "Segoe UI", sans-serif;
+        background: var(--navy-900);
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      /* ── Header ─────────────────────────────────────────────── */
+      header {
+        width: 100%;
+        background: var(--navy-800);
+        border-bottom: 1px solid var(--border);
+        padding: 0 40px;
+      }
+      .header-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        height: 46px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .header-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--gold);
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 10px rgba(250, 204, 21, 0.3);
+      }
+      .header-text h1 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -0.2px;
+      }
+      .header-text p {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 1px;
+      }
+      .header-pill {
+        margin-left: auto;
+        background: var(--gold-bg);
+        border: 1px solid rgba(250, 204, 21, 0.25);
+        color: var(--gold);
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+      }
+
+      /* ── Hero ───────────────────────────────────────────────── */
+      .hero {
+        width: 100%;
+        background: linear-gradient(
+          160deg,
+          var(--navy-700) 0%,
+          var(--navy-900) 100%
+        );
+        border-bottom: 1px solid var(--border);
+        padding: 12px 40px 10px;
+        text-align: center;
+      }
+      .hero h2 {
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .hero h2 span {
+        color: var(--gold);
+      }
+      .hero p {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        max-width: 540px;
+        margin: 0 auto;
+        line-height: 1.4;
+      }
+
+      /* ── Main grid ──────────────────────────────────────────── */
+      .main {
+        width: 100%;
+        max-width: 1160px;
+        padding: 10px 24px;
+        display: grid;
+        grid-template-columns: 5fr 6fr;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+        .hero {
+          padding: 28px 20px 24px;
+        }
+        .hero h2 {
+          font-size: 1.5rem;
+        }
+      }
+
+      /* ── Card ───────────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 14px 18px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .card-title {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-title::before {
+        content: "";
+        display: inline-block;
+        width: 3px;
+        height: 14px;
+        background: var(--gold);
+        border-radius: 2px;
+      }
+
+      /* ── Textarea ───────────────────────────────────────────── */
+      textarea {
+        width: 100%;
+        flex: 1;
+        min-height: 80px;
+        background: var(--navy-800);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        padding: 10px 14px;
+        resize: none;
+        outline: none;
+        transition:
+          border-color 0.18s,
+          box-shadow 0.18s;
+      }
+      textarea:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.12);
+      }
+      textarea::placeholder {
+        color: var(--text-faint);
+      }
+
+      /* ── Button ─────────────────────────────────────────────── */
+      .btn-classify {
+        margin-top: 8px;
+        width: 100%;
+        padding: 9px;
+        background: var(--gold);
+        border: none;
+        border-radius: var(--radius-md);
+        color: var(--navy-900);
+        font-family: inherit;
+        font-size: 0.92rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 12px rgba(250, 204, 21, 0.25);
+        transition:
+          background 0.18s,
+          transform 0.1s,
+          box-shadow 0.18s;
+      }
+      .btn-classify:hover {
+        background: var(--gold-light);
+        box-shadow: 0 4px 20px rgba(250, 204, 21, 0.35);
+      }
+      .btn-classify:active {
+        transform: scale(0.985);
+      }
+      .btn-classify:disabled {
+        background: var(--navy-400);
+        color: var(--text-faint);
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      /* ── Tip box ────────────────────────────────────────────── */
+      .tip-box {
+        margin-top: 8px;
+        background: var(--gold-bg);
+        border-left: 3px solid var(--gold-dim);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.72rem;
+        color: var(--gold-light);
+        line-height: 1.55;
+      }
+      .tip-box strong {
+        color: var(--gold);
+      }
+
+      /* ── Spinner ────────────────────────────────────────────── */
+      .spinner-wrap {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100px;
+        gap: 10px;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border);
+        border-top-color: var(--gold);
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner-wrap p {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      /* ── Placeholder ────────────────────────────────────────── */
+      #placeholder-hint {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        gap: 10px;
+        color: var(--text-faint);
+      }
+      .placeholder-icon {
+        width: 52px;
+        height: 52px;
+        background: var(--surface-2);
+        border: 2px dashed var(--border-hi);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+      }
+      #placeholder-hint p {
+        font-size: 0.82rem;
+        color: var(--text-faint);
+        text-align: center;
+        max-width: 210px;
+      }
+
+      /* ── Result section ─────────────────────────────────────── */
+      #result-section {
+        display: none;
+      }
+
+      .predicted-badge {
+        background: linear-gradient(135deg, var(--navy-700), var(--navy-600));
+        border: 1.5px solid var(--gold-dim);
+        border-radius: var(--radius-md);
+        padding: 10px 16px;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      .predicted-badge .label {
+        font-size: 0.66rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+      }
+      .predicted-badge .genre {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--gold);
+        margin: 2px 0 2px;
+        text-transform: capitalize;
+        letter-spacing: -0.5px;
+      }
+      .predicted-badge .conf {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .conf-bar-wrap {
+        margin-top: 10px;
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .conf-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+        border-radius: 3px;
+        transition: width 0.5s ease;
+      }
+
+      /* ── Chart ──────────────────────────────────────────────── */
+      .chart-wrap {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* ── Error ──────────────────────────────────────────────── */
+      #error-msg {
+        display: none;
+        background: var(--danger-bg);
+        border: 1px solid rgba(248, 113, 113, 0.2);
+        border-left: 3px solid var(--danger);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--danger);
+        font-size: 0.8rem;
+        margin-top: 6px;
+        white-space: pre-wrap;
+      }
+
+      /* ── Footer ─────────────────────────────────────────────── */
+      footer {
+        width: 100%;
+        background: var(--navy-800);
+        border-top: 1px solid var(--border);
+        padding: 8px 24px;
+        flex-shrink: 0;
+      }
+      .footer-inner {
+        max-width: 1160px;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 6px 14px;
+      }
+      .footer-inner span {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+      }
+      .footer-inner .sep {
+        color: var(--border-hi);
+      }
+      .footer-inner .author {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #fff;
+      }
+      .footer-inner .reg {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--navy-900);
+        background: var(--gold);
+        padding: 2px 10px;
+        border-radius: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="header-inner">
+        <div class="header-icon">🎵</div>
+        <div class="header-text">
+          <h1>Music Genre Classifier</h1>
+          <p>Apache Spark MLlib &middot; TF-IDF &middot; Logistic Regression</p>
+        </div>
+        <span class="header-pill">8 Genres</span>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h2>Classify Song <span>Genre</span> Instantly</h2>
+      <p>
+        Paste song lyrics below and our Spark MLlib pipeline will predict the
+        genre with confidence scores across all 8 classes.
+      </p>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <!-- LEFT: Input -->
+      <div class="card">
+        <div class="card-title">Song Lyrics</div>
+        <textarea
+          id="lyrics-input"
+          placeholder="Paste song lyrics here and click Classify Genre..."
+        ></textarea>
+        <button
+          class="btn-classify"
+          id="classify-btn"
+          onclick="classifyLyrics()"
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          Classify Genre
+        </button>
+        <div id="error-msg"></div>
+        <div class="tip-box">
+          <strong>Tip:</strong> Paste at least 2-3 verses for best accuracy.
+          Supported genres: Pop, Rock, Blues, Jazz, Country, Reggae, Hip Hop,
+          Soul.
+        </div>
+      </div>
+
+      <!-- RIGHT: Results -->
+      <div class="card">
+        <div class="card-title">Classification Result</div>
+
+        <div class="spinner-wrap" id="spinner">
+          <div class="spinner"></div>
+          <p>Analysing with Spark MLlib...</p>
+        </div>
+
+        <div id="placeholder-hint">
+          <div class="placeholder-icon">🎤</div>
+          <p>Results will appear here after classification</p>
+        </div>
+
+        <div id="result-section">
+          <div class="predicted-badge">
+            <div class="label">Predicted Genre</div>
+            <div class="genre" id="genre-name">&mdash;</div>
+            <div class="conf" id="genre-conf"></div>
+            <div class="conf-bar-wrap">
+              <div class="conf-bar" id="conf-bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="genre-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-inner">
+        <span>Music Genre Classifier</span>
+        <span class="sep">|</span>
+        <span>MSc Big Data Analysis &middot; 2026</span>
+        <span class="sep">|</span>
+        <span>Created by</span>
+        <span class="author">M Rashmi Pubuditha</span>
+        <span class="reg">268383V</span>
+      </div>
+    </footer>
+
+    <script>
+      let chartInstance = null;
+
+      /* Chart palette — each genre gets a distinct colour */
+      const GENRE_COLOURS = {
+        pop: { bg: "rgba(244,114,182,.70)", border: "#ec4899" },
+        country: { bg: "rgba(250,204,21,.70)", border: "#eab308" },
+        blues: { bg: "rgba(96,165,250,.70)", border: "#3b82f6" },
+        rock: { bg: "rgba(248,113,113,.70)", border: "#ef4444" },
+        jazz: { bg: "rgba(167,139,250,.70)", border: "#8b5cf6" },
+        reggae: { bg: "rgba(52,211,153,.70)", border: "#10b981" },
+        "hip hop": { bg: "rgba(251,146,60,.70)", border: "#f97316" },
+        soul: { bg: "rgba(56,189,248,.70)", border: "#0ea5e9" },
+      };
+
+      function getColour(genre, prop) {
+        const key = genre.toLowerCase();
+        const fb = { bg: "rgba(148,163,184,.60)", border: "#94a3b8" };
+        return (GENRE_COLOURS[key] ?? fb)[prop];
+      }
+
+      async function classifyLyrics() {
+        const lyrics = document.getElementById("lyrics-input").value.trim();
+        if (!lyrics) {
+          showError("Please paste some lyrics first.");
+          return;
+        }
+        setLoading(true);
+        hideError();
+        try {
+          const resp = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lyrics }),
+          });
+          const data = await resp.json();
+          if (!resp.ok || data.error) {
+            showError(data.error || "An unknown error occurred.");
+            return;
+          }
+          displayResults(data);
+        } catch (err) {
+          showError("Network error: " + err.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function displayResults(probMap) {
+        const entries = Object.entries(probMap).sort(([, a], [, b]) => b - a);
+        const topGenre = entries[0][0];
+        const topProb = entries[0][1];
+        const pct = (topProb * 100).toFixed(1);
+
+        document.getElementById("genre-name").textContent = topGenre;
+        document.getElementById("genre-conf").textContent =
+          "Confidence: " + pct + "%";
+        document.getElementById("conf-bar").style.width = pct + "%";
+
+        const labels = entries.map(
+          ([g]) => g.charAt(0).toUpperCase() + g.slice(1),
+        );
+        const values = entries.map(([, v]) => parseFloat((v * 100).toFixed(3)));
+        const bgColours = entries.map(([g]) => getColour(g, "bg"));
+        const borderColours = entries.map(([g]) => getColour(g, "border"));
+
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(
+          document.getElementById("genre-chart").getContext("2d"),
+          {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Probability (%)",
+                  data: values,
+                  backgroundColor: bgColours,
+                  borderColor: borderColours,
+                  borderWidth: 2,
+                  borderRadius: 6,
+                },
+              ],
+            },
+            options: {
+              indexAxis: "y",
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: "#0b1333",
+                  titleColor: "#facc15",
+                  bodyColor: "#e8ecf4",
+                  borderColor: "#1e2b52",
+                  borderWidth: 1,
+                  padding: 10,
+                  callbacks: {
+                    label: (c) => "  " + c.parsed.x.toFixed(2) + "%",
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  min: 0,
+                  max: 100,
+                  grid: { color: "#1e2b52" },
+                  ticks: { color: "#5a6380", callback: (v) => v + "%" },
+                  title: {
+                    display: true,
+                    text: "Probability (%)",
+                    color: "#5a6380",
+                    font: { size: 11 },
+                  },
+                },
+                y: {
+                  grid: { display: false },
+                  ticks: {
+                    color: "#e8ecf4",
+                    font: { size: 13, weight: "600" },
+                  },
+                },
+              },
+            },
+          },
+        );
+
+        document.getElementById("placeholder-hint").style.display = "none";
+        document.getElementById("result-section").style.display = "block";
+      }
+
+      function setLoading(on) {
+        document.getElementById("spinner").style.display = on ? "flex" : "none";
+        document.getElementById("classify-btn").disabled = on;
+        if (on) {
+          document.getElementById("result-section").style.display = "none";
+          document.getElementById("placeholder-hint").style.display = "none";
+        }
+      }
+
+      function showError(msg) {
+        const el = document.getElementById("error-msg");
+        el.textContent = msg;
+        el.style.display = "block";
+        document.getElementById("placeholder-hint").style.display = "flex";
+        document.getElementById("result-section").style.display = "none";
+      }
+
+      function hideError() {
+        document.getElementById("error-msg").style.display = "none";
+      }
+    </script>
+  </body>
+</html>
