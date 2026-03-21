@@ -253,12 +253,6 @@ curl -X POST http://localhost:5000/predict \
 
 ---
 
-## 📄 License
-
-This project was developed as part of the MSc Big Data Analysis programme (2026).
-
----
-
 ## 👤 Author
 
 **M Rashmi Pubuditha**
